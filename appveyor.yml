@@ -28,8 +28,9 @@ install:
   - activate python%PYTHON_VERSION%-%PLATFORM%
   - conda install -q setuptools pandas wheel pip libpython cython zlib
   - conda install -q -c msys2 m2w64-toolchain
+  - del /Q dist\*.*
+  - dir dist
   #- python.exe setup.py config_fc
-  - dir %CONDAPATH%
   - python.exe setup.py config --compiler=mingw32
   #- copy C:\projects\pyreadstat\scripts\distutils.cfg %CONDAPATH%\Lib\distutils
   - python.exe setup.py bdist_wheel 
