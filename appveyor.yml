@@ -31,7 +31,7 @@ install:
   #- python.exe setup.py config_fc
   - ps: "pwd"
   - ps: "ls"
-  - ps: "ls C:\projects\pyreadstat\scripts"
+  - dir C:\projects\pyreadstat\scripts
   - echo %CONDPATH%
   - dir %CONDPATH%\Lib\distutils
   - python.exe setup.py config --compiler=mingw32
