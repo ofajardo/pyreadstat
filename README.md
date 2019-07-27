@@ -1,13 +1,13 @@
 # pyreadstat
 
-A python package to read sas (sas7bdat, sas7bcat, xport), spps (sav, zsav, por) and stata (dta) data files into 
-pandas dataframes.
+A python package to read and write sas (sas7bdat, sas7bcat, xport), spps (sav, zsav, por) and stata (dta) data files 
+into/from pandas dataframes.
 <br> 
 
 This module is a wrapper around the excellent [Readstat](https://github.com/WizardMac/ReadStat) C library by 
 [Evan Miller](https://www.evanmiller.org/). Readstat is the library used in the back of the R library 
 [Haven](https://github.com/tidyverse/haven), 
-meaning pyreadstat is a python equivalent to R Haven (but writing files is currently not supported.)
+meaning pyreadstat is a python equivalent to R Haven.
 
 Detailed documentation on all available methods is in the 
 [Module documentation](https://ofajardo.github.io/pyreadstat_documentation/_build/html/index.html)
@@ -21,7 +21,7 @@ around the C library [librdata](https://github.com/WizardMac/librdata)
 
 **Pyreadstat is not a validated package. The results may have inaccuracies deriving from the fact most of the data formats
 are not open. Do not use it for critical tasks such as reporting to the authorities. Pyreadstat is not meant to replace
-the original applications in this regard and for that reason writing is not supported.**  
+the original applications in this regard.**  
 
 ## Table of Contents
 
@@ -29,17 +29,20 @@ the original applications in this regard and for that reason writing is not supp
 * [Dependencies](#dependencies)
 * [Installation](#installation)
   + [Using pip](#using-pip)
+  + [Using conda](#using-conda)
   + [From the latest sources](#from-the-latest-sources)
   + [Compiling on Windows and Mac](#compiling-on-windows-and-mac)
 * [Usage](#usage)
   + [Basic Usage](#basic-usage)
+    - [Reading Files](#reading-files)
+    - [Writing Files](#writing-files)
   + [Reading only the headers](#reading-only-the-headers)
   + [Reading selected columns](#reading-selected-columns)
   + [Reading value labels](#reading-value-labels)
   + [Missing Values](#missing-values)
     - [SPSS](#spss)
-    - [SAS](#sas)
-+ [Other options](#other-options)
+    - [SAS and STATA](#sas-and-stata)
+  + [Other options](#other-options)
 * [Roadmap](#roadmap)
 * [Known limitations](#known-limitations)
 * [Python 2.7 support.](#python-27-support)
@@ -134,8 +137,19 @@ pip install pyreadstat --user
 
 Notice that at the moment we offer pre-compiled wheels for windows, mac and 
 linux for Python 2.7, 3.5, 3.6 and 3.7. Python 2.7 does not work for
-widows (see later python 2.7 support). If there is no pre-compiled 
+windows (see later python 2.7 support). If there is no pre-compiled 
 wheel available, pip will attempt to compile the package. 
+
+### Using conda
+
+The package is also available in [conda-forge](https://anaconda.org/conda-forge/pyreadstat) for windows, mac and linux 
+64 bit, python 3.6 and 3.7. only.
+
+In order to install:
+
+```
+conda install -c conda-forge pyreadstat 
+```
 
 ### From the latest sources
 
@@ -159,7 +173,7 @@ pip install git+https://github.com/Roche/pyreadstat.git
 
 You need a working C compiler. If working in python 2.7 you will need
 cython version >= 0.28 installed (see later Python 2.7 support). For python 3, cython
-is not necessary, but if installed it will be used.
+is not necessary if compiling on unix, but if installed it will be used.
 
 ### Compiling on Windows and Mac
 
@@ -182,6 +196,8 @@ the folder build, otherwise you may be installing the old compilation again).
 
 ### Basic Usage
 
+#### Reading files
+
 Pass the path to a file to any of the functions provided by pyreadstat. It will return a pandas data frame and a metadata
 object. <br>
 The dataframe uses the column names. The metadata object contains the column names, column labels, number_rows, 
@@ -198,7 +214,7 @@ df, meta = pyreadstat.read_sas7bdat('/path/to/a/file.sas7bdat')
 
 # done! let's see what we got
 print(df.head())
-print(meta.colum_names)
+print(meta.column_names)
 print(meta.column_labels)
 print(meta.number_rows)
 print(meta.number_columns)
@@ -216,6 +232,27 @@ df.columns = meta.column_labels
 df.columns = meta.column_names
 ```
 
+#### Writing files
+
+Pyreadstat can write STATA (dta), SPSS (sav and zsav, por currently nor supported) and SAS (Xport, sas7bdat and sas7bcat
+currently not supported) files from pandas data frames.
+
+write functions take as first argument a pandas data frame (other data structures are not supported), as a second argument
+the path to the destination file. Optionally you can also pass a file label and a list with column labels.
+
+```python
+import pandas as pd
+import pyreadstat
+
+df = pd.DataFrame([[1,2.0,"a"],[3,4.0,"b"]], columns=["v1", "v2", "v3"])
+column_labels = ["Variable 1", "Variable 2", "Variable 3"]
+pyreadstat.write_sav(df, "path/to/destination.sav", file_label="test", column_labels=column_labels)
+```
+
+Some special arguments are available depending on the function. write_sav can take also notes as string and wheter to
+compress or not as zsav. write_dta can take a stata version. write_xport a name for the dataset. See the 
+[Module documentation](https://ofajardo.github.io/pyreadstat_documentation/_build/html/index.html) for more details.
+
 Here there is a relation of all functions available. 
 You can also check the [Module documentation](https://ofajardo.github.io/pyreadstat_documentation/_build/html/index.html).
 
@@ -229,6 +266,9 @@ You can also check the [Module documentation](https://ofajardo.github.io/pyreads
 | read_por            | read SPSS por files  |
 | set_catalog_to_sas  | enrich sas dataframe with catalog formats |
 | set_value_labels    | replace values by their labels |
+| write_sav           | write SPSS sav and zsav files |
+| write_dta           | write STATA dta files |
+| write_xport         | write SAS Xport (XPT) files version 5 |
 
 
 ### Reading only the headers
@@ -309,6 +349,51 @@ df, meta = pyreadstat.read_sav("/path/to/sav/file.sav", apply_value_formats=Fals
 df_enriched = pyreadstat.set_value_labels(df, meta, formats_as_category=True)
 ```
 
+Internally each variable is associated with a label set. This information is stored in meta.variable_to_label. Each
+label set contains a map of the actual value in the variable to the label, this informtion is stored in 
+meta.variable_value_labels. By combining both you can get a dictionary of variable names to a dictionary of actual 
+values to labels. 
+
+For SPSS and STATA:
+
+```python
+import pyreadstat
+
+df, meta = pyreadstat.read_sav("test_data/basic/sample.sav")
+# the variables mylabl and myord are associated to the label sets labels0 and labels1 respectively
+print(meta.variable_to_label)
+#{'mylabl': 'labels0', 'myord': 'labels1'}
+
+# labels0 and labels1 contain a dictionary of actual value to label
+print(meta.value_labels)
+#{'labels0': {1.0: 'Male', 2.0: 'Female'}, 'labels1': {1.0: 'low', 2.0: 'medium', 3.0: 'high'}}
+
+# both things have been joined by pyreadstat for convienent use
+print(meta.variable_value_labels)
+#{'mylabl': {1.0: 'Male', 2.0: 'Female'}, 'myord': {1.0: 'low', 2.0: 'medium', 3.0: 'high'}}
+
+```
+
+SAS is very similar except that meta.variable_to_label comes from the sas7bdat file and meta.value_labels comes from the
+sas7bcat file. That means if you read a sas7bdat file and a sas7bcat file togheter meta.variable_value_labels will be
+filled in. If you read only the sas7bdat file only meta.variable_to_label will be available and if you read the 
+sas7bcat file only meta.value_labels will be available. If you read a sas7bdat file and there are no associated label
+sets, SAS will assign by default the variable format as label sets.
+
+```python
+import pyreadstat
+
+df, meta = pyreadstat.read_sas7bdat("test_data/sas_catalog/test_data_linux.sas7bdat")
+meta.variable_to_label
+{'SEXA': '$A', 'SEXB': '$B'}
+
+df2, meta2 = pyreadstat.read_sas7bcat("test_data/sas_catalog/test_formats_linux.sas7bcat")
+meta2.value_labels
+{'$A': {'1': 'Male', '2': 'Female'}, '$B': {'2': 'Female', '1': 'Male'}} 
+
+```
+
+
 ### Missing Values
 
 There are two types of missing values: system and user defined. System are assigned by the program by default. User defined are 
@@ -329,7 +414,7 @@ but one can get those original values by passing the argument user_missing=True 
 
 ```python
 # user set with default missing values
-import pypreadstat
+import pyreadstat
 df, meta = pyreadstat.read_sav("/path/to/file.sav")
 print(df)
 >> test_passed
@@ -343,7 +428,7 @@ Now, reading the user defined missing values:
 
 ```python
 # user set with user defined missing values
-import pypreadstat
+import pyreadstat
 df, meta = pyreadstat.read_sav("/path/to/file.sav", user_missing=True)
 print(df)
 >> test_passed
@@ -356,7 +441,7 @@ print(df)
 As you see now instead o NaN the values 2 and 3 appear. In case the dataset had value labels, we could bring those in
 ```python
 # user set with user defined missing values and labels
-import pypreadstat
+import pyreadstat
 df, meta = pyreadstat.read_sav("/path/to/file.sav", user_missing=True, apply_value_formats=True)
 print(df)
 >> test_passed
@@ -373,38 +458,76 @@ as in the example, both boundaries are also present although the value is the sa
 
 ```python
 # user set with default missing values
-import pypreadstat
+import pyreadstat
 df, meta = pyreadstat.read_sav("/path/to/file.sav", user_missing=True, apply_value_formats=True)
 print(meta.missing_ranges)
 >>> {'test_passed':[{'hi':2, 'lo':2}, {'hi':3, 'lo':3}]}
 ```
 
-For SPSS sav files user defined missing values for non numeric (character) variables is not supported. In addition, if the value in
+SPSS sav files also support up to 3 discrete user defined missing values for non numeric (character) variables.
+Pyreadstat is able to read those and the behavior is the same as for discrete
+numerical user defined missing values. That means those values will be 
+translated as NaN by default and to the correspoding string value if 
+user_missing is set to True. meta.missing_ranges will show the string
+value as well. 
+
+If the value in
 a character variable is an empty string (''), it will not be translated to NaN, but will stay as an empty string. This
 is because the empty string is a valid character value in SPSS and pyreadstat preserves that property. You can convert
-empty strings to nan very easily with pandas. 
+empty strings to nan very easily with pandas if you think it is appropiate
+for your dataset.
 
-For SPSS por files, 
 
-#### SAS
+#### SAS and STATA
 
-In SAS the user can assign values from .A to .Z and ._ as missing values. As in SPSS, those are normally translated to
-NaN. However, using user_missing=True with read_sas7bdat will produce values from A to Z and _. In addition a variable
+In SAS the user can assign values from .A to .Z and ._ as user defined missing values. In Stata values from
+.a to .z. As in SPSS, those are normally translated to
+NaN. However, using user_missing=True with read_sas7bdat or read_dta
+will produce values from A to Z and _ for SAS and a to z for dta. In addition a variable
 missing_user_values will appear in the metadata object, being a list with those values that are user defined missing
 values.
+
+```python
+import pyreadstat
+
+df, meta = pyreadstat.read_sas7bdat("/path/to/file.sas7bdat", user_missing=True)
+
+df, meta = pyreadstat.read_dta("/path/to/file.dta", user_missing=True)
+
+print(meta.missing_user_values)
+
+```
  
-At the moment of writing these lines, this is not working for all sas7bdat files: it seems to be working for
-files produced on windows/32 bit but not for files produced on unix/64 bit, where even files without user defined missing values will throw
-errors. 
+The user may also assign a label to user defined missing values. In such 
+case passing the corresponding sas7bcat file to read_sas7bdat or using 
+the option apply_value_formats to read_dta will show those labels instead
+of the user defined missing value. 
+
+```python
+import pyreadstat
+
+df, meta = pyreadstat.read_sas7bdat("/path/to/file.sas7bdat", catalog_file="/path/to/file.sas7bcat", user_missing=True)
+
+df, meta = pyreadstat.read_dta("/path/to/file.dta", user_missing=True, apply_value_formats=True)
+
+```
 
 Empty strings are still transtaled as empty strings and not as NaN.
 
-User defined missing values are currently not supported for file types other than sas7bdat, at the moment.
 
+The information about what values are user missing is stored in the meta object, in the variable missing_user_values.
+This is a list listing all user defined missing values.
+
+User defined missing values are currently not supported for file types other than sas7bdat,
+sas7bcat and dta.
 
 ### Other options
 
-You can set the encoding of the original file manually. The encoding must be a [iconv-compatible encoding](https://gist.github.com/hakre/4188459) 
+You can set the encoding of the original file manually. The encoding must be a [iconv-compatible encoding](https://gist.github.com/hakre/4188459).
+This is absolutely necessary if you are handling old xport files with 
+non-ascii characters. Those files do not have stamped the encoding in the
+file itself, therefore the encoding must be set manually.
+ 
 
 ```python
 import pyreadstat
@@ -426,8 +549,8 @@ For more information, please check the [Module documentation](https://ofajardo.g
 
 ## Roadmap
 
-* Improvements in user defined missing values for SAS and STATA.
-
+* Improve writing functions with capability to write value labels and user defined missing values.
+* Include latest releases from Readstat as the come out.
 
 ## Known limitations
 
@@ -435,11 +558,24 @@ pyreadstat builds on top of Readstat and therefore inherits its limitations. Cur
 
 * Not able to read SAS compressed files. 
 * Not able to skip rows.
-* Not handling SPSS user defined missing values for character variables (numeric are fine).
-* Not handling correctly SAS user defined missing values: not detecting those for files produced on unix/64 bit.
 * Dates, datetimes and times in SPSS POR files are not translated to python dates, datetimes and times, but stay as 
   timestamps.
+* Cannot write SAS sas7bdat and xport version 8 (version 5 is supported). Those files can be written but not read in 
+SAS and therefore are not supported in pyreadstat. SPSS por files can also not be written at the moment.
   
+Converting data types from foreign applications into python some times also bring some limitations:
+
+* Pyreadstat transforms date, datetime and time like variables which are internally represented in the original application as 
+ numbers to python datetime objects. Python datetime objects are however limited in the range of dates they can represent
+ (for example the max year is 10,000), while in other applications it is possible (although probably an error in the data)
+ to have very high or very low dates. In this cases pyreadstat would raise an error:
+ 
+ ```
+ OverflowError: date value out of range
+ ```
+  
+  The workarounds to deal with this include using the keyword argument disable_datetime_conversion so that you will 
+  get numbers instead of datetime objects or skipping reading such columns with the argument usecols.
 
 ## Python 2.7 support.
 
@@ -479,9 +615,13 @@ pull request to ReadStat first.
 
 ## People
 
-Otto Fajardo - author, maintainer
+[Otto Fajardo](https://github.com/ofajardo) - author, maintainer
 
 [Matthew Brett](http://matthew.dynevor.org/) - contributor [python wheels](https://github.com/MacPython/pyreadstat-wheels)
 
-[Jonathon Love](https://jona.thon.love/) - contributor
+[Jonathon Love](https://jona.thon.love/) - contributor: open files with international characters.
+
+[Clemens Brunner](https://github.com/cbrnr) - integration with pandas.read_spss
+
+[benjello](https://github.com/benjello), [maxwell8888](https://github.com/maxwell8888), [drcjar](https://github.com/drcjar): improvements to documentation
 

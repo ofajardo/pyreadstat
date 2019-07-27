@@ -668,7 +668,7 @@ static readstat_error_t sas7bdat_write_missing_tagged(void *row, const readstat_
 }
 
 static readstat_error_t sas7bdat_write_missing_numeric(void *row, const readstat_variable_t *var) {
-    return sas7bdat_write_missing_tagged_raw(row, var, 0);
+    return sas7bdat_write_missing_tagged_raw(row, var, '.');
 }
 
 static readstat_error_t sas7bdat_write_string(void *row, const readstat_variable_t *var, const char *value) {
@@ -775,15 +775,22 @@ static readstat_error_t sas7bdat_write_row(void *writer_ctx, void *bytes, size_t
     return retval;
 }
 
-readstat_error_t readstat_begin_writing_sas7bdat(readstat_writer_t *writer, void *user_ctx, long row_count) {
+static readstat_error_t sas7bdat_metadata_ok(void *writer_ctx) {
+    readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
 
     if (writer->compression != READSTAT_COMPRESS_NONE &&
             writer->compression != READSTAT_COMPRESS_ROWS)
         return READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
 
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_begin_writing_sas7bdat(readstat_writer_t *writer, void *user_ctx, long row_count) {
+
     if (writer->version == 0)
         writer->version = SAS_DEFAULT_FILE_VERSION;
 
+    writer->callbacks.metadata_ok = &sas7bdat_metadata_ok;
     writer->callbacks.write_int8 = &sas7bdat_write_int8;
     writer->callbacks.write_int16 = &sas7bdat_write_int16;
     writer->callbacks.write_int32 = &sas7bdat_write_int32;

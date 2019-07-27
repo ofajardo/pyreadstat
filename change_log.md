@@ -1,4 +1,30 @@
-# 0.2.1 (github 18.12.2018, release tag)
+# 0.2.7 (github, pypi, conda 27.06.2019)
+* added writing capability.
+
+# 0.2.6 (github, pypi, conda 15.06.2019)
+* MANIFEST.in changed so that windows dlls get into the source distribution, setup.py
+changed so that those get installed only on windows but not unix.
+* Implemented option disable_datetime_conversion for all reading functions in order
+to skip date/datetime and time object conversion.
+* Updated Readstat Sources to Release Version 1.0.1
+
+# 0.2.5 (github, pypi and conda 09.05.2019)
+* Same as 0.2.4, just fixed issues in source distribution so that conda build 
+  succeeds.
+
+# 0.2.4 (github and pypi 08.05.2019)
+* encoding support for xpt files.
+* support for user defined missing character values in sav.
+* Updated Readstat Sources to Release 1.0
+
+# 0.2.3 (github 04.02.2019)
+* User defined values fixed for sas7bdat, implemented for sas7bcat and dta.
+* Readstat sources updated.
+
+# 0.2.2 (github 18.01.2019)
+* Implemented support for reading international characters in files.
+
+# 0.2.1 (github 18.12.2018, release tag, conda-forge 04.02.2019)
 * Implemented user defined missing values for read_sas7bdat. Currently not working for 64 bit files.
 * Corrected datetime transformations for stata dta files, sample.dta updated
 * cython updated from 26.1 to 29.1

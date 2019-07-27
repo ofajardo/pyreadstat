@@ -40,8 +40,8 @@ cdef list sas_all_formats = sas_date_formats + sas_datetime_formats + sas_time_f
 #sas_origin = datetime(1960,1,1)
 cdef object sas_origin = datetime_new(1960, 1, 1, 0, 0, 0, 0, None)
 
-cdef list spss_datetime_formats = ["DATETIME", 'DATETIME20', 'DATETIME23.2']
-cdef list spss_date_formats = ["DATE", "ADATE", "EDATE", "JDATE", "SDATE", 'EDATE10']
+cdef list spss_datetime_formats = ["DATETIME", 'DATETIME20', 'DATETIME23.2', "DATETIME8"]
+cdef list spss_date_formats = ["DATE", "ADATE", "EDATE", "JDATE", "SDATE", 'EDATE10', 'DATE8']
 cdef list spss_time_formats = ["TIME", "DTIME", 'TIME8', 'TIME5', 'TIME11.2']
 cdef list spss_all_formats = spss_date_formats + spss_datetime_formats + spss_time_formats
 cdef object spss_origin = datetime_new(1582, 10, 14, 0, 0, 0, 0, None)
@@ -90,6 +90,7 @@ cdef class data_container:
         self.variable_display_width = dict()
         self.variable_alignment = dict()
         self.variable_measure = dict()
+        self.no_datetime_conversion = 0
         
 class metadata_container:
     """
@@ -295,19 +296,19 @@ cdef object convert_readstat_to_python_value(readstat_value_t value, int index, 
     # final transformation and storage
 
     if pyformat == VAR_FORMAT_STRING:
-        if var_format == DATE_FORMAT_NOTADATE:
+        if var_format == DATE_FORMAT_NOTADATE or dc.no_datetime_conversion:
             result = py_str_value
         else:
             #str_byte_val = py_str_value.encode("UTF-8")
             raise PyreadstatError("STRING type with value %s with date type" % py_str_value )
     elif pyformat == VAR_FORMAT_LONG:
-        if var_format == DATE_FORMAT_NOTADATE:
+        if var_format == DATE_FORMAT_NOTADATE or dc.no_datetime_conversion:
             result = py_long_value
         else:
             tstamp = <double> py_long_value
             result = transform_datetime(var_format, tstamp, file_format, origin, dates_as_pandas)
     elif pyformat == VAR_FORMAT_FLOAT:
-        if var_format == DATE_FORMAT_NOTADATE:
+        if var_format == DATE_FORMAT_NOTADATE or dc.no_datetime_conversion:
             result = py_float_value
         else:
             #tstamp = <int> py_float_value
@@ -419,6 +420,8 @@ cdef int handle_variable(int index, readstat_variable_t *variable,
     if dc.filter_cols and not (col_name in dc.use_cols):
         dc.n_vars -= 1
         return READSTAT_HANDLER_SKIP_VARIABLE
+
+    index = readstat_variable_get_index_after_skipping(variable)
 
     dc.col_names.append(col_name)
 
@@ -550,20 +553,14 @@ cdef int handle_value(int obs_index, readstat_variable_t * variable, readstat_va
             dc.col_data[index][obs_index] = pyvalue
         elif readstat_value_is_tagged_missing(value):
             # SAS and Stata missing values
-            # In the case of SAS datasets sometimes it returns a number that translated to
-            # charater gives correctly the missing value (A, B, etc). But sometimes
-            # the numbers do not correlate to the missing character seen, for example,
-            # A gets translated to 2, B to 3 etc, while the true missing value . gets 1
-            # maybe it is something dependent on the version or operating system (windows vs linux generated files?)
-            # As for now usernan is disabled for stata, as I have not been able to test it, enabled for SAS.
             missing_tag = <int> readstat_value_tag(value)
             # In SAS missing values are A to Z or _ in stata a to z
-            if (missing_tag >=65 and missing_tag <= 90) or missing_tag == 95 or (missing_tag >=61 and missing_tag <= 122):
-                dc.col_data[index][obs_index] =  chr(missing_tag)
-                dc.missing_user_values.add(chr(missing_tag))
-            else:
-                msg = "Expecting missing tag value from 65(A) to 90(Z), 95(_) or a (61)to (122)z, got %d instead" % missing_tag
-                raise PyreadstatError(msg)
+            #if (missing_tag >=65 and missing_tag <= 90) or missing_tag == 95 or (missing_tag >=61 and missing_tag <= 122):
+            dc.col_data[index][obs_index] =  chr(missing_tag)
+            dc.missing_user_values.add(chr(missing_tag))
+            #else:
+                #msg = "Expecting missing tag value from 65(A) to 90(Z), 95(_) or a (61)to (122)z, got %d instead" % missing_tag
+                #raise PyreadstatError(msg)
 
     else:
         pyvalue = convert_readstat_to_python_value(value, index, dc)
@@ -601,49 +598,57 @@ cdef int handle_value_label(char *val_labels, readstat_value_t value, char *labe
 
     cdef readstat_type_t value_type
     value_type = readstat_value_type(value)
-
-    if value_type == READSTAT_TYPE_STRING or value_type == READSTAT_TYPE_STRING_REF:
-        c_str_value = readstat_string_value(value)
-        py_str_value = <str> c_str_value
-        pyformat = VAR_FORMAT_STRING
-    elif value_type == READSTAT_TYPE_INT8:
-        c_int8_value = readstat_int8_value(value)
-        py_long_value = <long> c_int8_value
-        pyformat = VAR_FORMAT_LONG
-    elif value_type == READSTAT_TYPE_INT16:
-        c_int16_value = readstat_int16_value(value)
-        py_long_value = <long> c_int16_value
-        pyformat = VAR_FORMAT_LONG
-    elif value_type == READSTAT_TYPE_INT32:
-        c_int32_value = readstat_int32_value(value)
-        py_long_value = <long> c_int32_value
-        pyformat = VAR_FORMAT_LONG
-    elif value_type == READSTAT_TYPE_FLOAT:
-        c_float_value = readstat_float_value(value)
-        py_float_value = <double> c_float_value
-        pyformat = VAR_FORMAT_FLOAT
-    elif value_type == READSTAT_TYPE_DOUBLE:
-        c_double_value = readstat_double_value(value);
-        py_float_value = <double> c_double_value
-        pyformat = VAR_FORMAT_FLOAT
-    else:
-        raise PyreadstatError("Unkown data type")
-
+    
     labels_raw = dc.labels_raw
     cur_dict = labels_raw.get(var_label)
     if not cur_dict:
         cur_dict = dict()
-
-    if pyformat == VAR_FORMAT_STRING:
-        cur_dict[py_str_value] = value_label_name
-    elif pyformat == VAR_FORMAT_LONG:
-        cur_dict[py_long_value] = value_label_name
-    elif pyformat == VAR_FORMAT_FLOAT:
-        cur_dict[py_float_value] = value_label_name
-    elif pyformat == VAR_FORMAT_MISSING:
-        pass
+    
+    if readstat_value_is_tagged_missing(value):
+        # SAS and Stata missing values
+        missing_tag = <int> readstat_value_tag(value)
+        # In SAS missing values are A to Z or _ in stata a to z
+        cur_dict[chr(missing_tag)] = value_label_name
     else:
-        raise PyreadstatError("Failed convert C to python value")
+
+        if value_type == READSTAT_TYPE_STRING or value_type == READSTAT_TYPE_STRING_REF:
+            c_str_value = readstat_string_value(value)
+            py_str_value = <str> c_str_value
+            pyformat = VAR_FORMAT_STRING
+        elif value_type == READSTAT_TYPE_INT8:
+            c_int8_value = readstat_int8_value(value)
+            py_long_value = <long> c_int8_value
+            pyformat = VAR_FORMAT_LONG
+        elif value_type == READSTAT_TYPE_INT16:
+            c_int16_value = readstat_int16_value(value)
+            py_long_value = <long> c_int16_value
+            pyformat = VAR_FORMAT_LONG
+        elif value_type == READSTAT_TYPE_INT32:
+            c_int32_value = readstat_int32_value(value)
+            py_long_value = <long> c_int32_value
+            pyformat = VAR_FORMAT_LONG
+        elif value_type == READSTAT_TYPE_FLOAT:
+            c_float_value = readstat_float_value(value)
+            py_float_value = <double> c_float_value
+            pyformat = VAR_FORMAT_FLOAT
+        elif value_type == READSTAT_TYPE_DOUBLE:
+            c_double_value = readstat_double_value(value);
+            py_float_value = <double> c_double_value
+            pyformat = VAR_FORMAT_FLOAT
+        else:
+            raise PyreadstatError("Unkown data type")
+
+
+        if pyformat == VAR_FORMAT_STRING:
+            cur_dict[py_str_value] = value_label_name
+        elif pyformat == VAR_FORMAT_LONG:
+            cur_dict[py_long_value] = value_label_name
+        elif pyformat == VAR_FORMAT_FLOAT:
+            cur_dict[py_float_value] = value_label_name
+        elif pyformat == VAR_FORMAT_MISSING:
+            pass
+        else:
+            raise PyreadstatError("Failed convert C to python value")
 
     dc.labels_raw[var_label] = cur_dict
 
@@ -732,6 +737,9 @@ cdef void run_readstat_parser(char * filename, data_container data, readstat_err
         if os.name == "nt":
             open_handler = <readstat_open_handler> handle_open
             readstat_set_open_handler(parser, open_handler)
+    ELSE:
+        if os.name == "nt":
+            raise PyreadstatError("Python 2 on windows not supported!")
 
     if not metaonly:
         retcode = readstat_set_value_handler(parser, value_handler)
@@ -848,7 +856,7 @@ cdef object data_container_extract_metadata(data_container data):
     metadata.original_variable_types = original_types
     metadata.table_name = data.table_name
     metadata.missing_ranges = data.missing_ranges
-    metadata.missing_user_values = list(data.missing_user_values)
+    metadata.missing_user_values = sorted(list(data.missing_user_values))
     metadata.variable_storage_width = data.variable_storage_width
     metadata.variable_display_width = data.variable_display_width
     metadata.variable_alignment = data.variable_alignment
@@ -858,7 +866,8 @@ cdef object data_container_extract_metadata(data_container data):
 
 
 cdef object run_conversion(str filename_path, py_file_format file_format, readstat_error_t parse_func(readstat_parser_t *parse, const char *, void *),
-                           str encoding, bint metaonly, bint dates_as_pandas, list usecols, bint usernan):
+                           str encoding, bint metaonly, bint dates_as_pandas, list usecols, bint usernan,
+                           bint no_datetime_conversion):
     """
     Coordinates the activities to parse a file. This is the entry point 
     for the public methods
@@ -898,6 +907,7 @@ cdef object run_conversion(str filename_path, py_file_format file_format, readst
         data.use_cols = usecols
 
     data.usernan = usernan
+    data.no_datetime_conversion = no_datetime_conversion
     
     # go!
     run_readstat_parser(filename, data, parse_func)    

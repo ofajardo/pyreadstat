@@ -18,6 +18,7 @@ import setuptools
 from distutils.core import setup, Extension
 import os
 import sys
+#import numpy
 
 PY_MAJOR_VERSION = sys.version_info[0]
 
@@ -35,13 +36,15 @@ except:
     if PY_MAJOR_VERSION < 3:
         msg = "In order to compile with Python 2.7, please install Cython version > 0.28"
         raise Exception(msg)
+    if '--use-cython' in sys.argv:
+        raise
 
 # To re-compile the pyx sources use the option --use-cython
-#if '--use-cython' in sys.argv:
-#    USE_CYTHON = True
-#    sys.argv.remove('--use-cython')
-#else:
-#    USE_CYTHON = False
+if '--use-cython' in sys.argv:
+    if not USE_CYTHON:
+        raise Exception("--use-cython failed to set cython to be used!")
+    sys.argv.remove('--use-cython')
+
 ext = '.pyx' if USE_CYTHON else '.c'
 
 
@@ -66,6 +69,8 @@ for dirname, _ , filenames in os.walk(source_dir_root):
 source_dirs = [dirname for dirname, _, _ in os.walk(source_dir_root) if dirname not in omitted_source_dirs]
 
 # libraries and data (in this case data are windows dlls)
+# altough these are win specific we want them to be in the source distribution
+# therefore we will always include them.
 data_files = []
 libraries=["m", "z"]
 # Windows
@@ -82,7 +87,7 @@ if os.name == 'nt':
               "Sorry!")
         sys.exit(1)
         data_folder = "win_libs/32bit/"
-    data_files = [("",[data_folder + "zlib1.dll", data_folder + "libiconv-2.dll"])]
+    data_files = [("", [data_folder + "zlib1.dll", data_folder + "libiconv-2.dll"])]
     libraries.append("iconv")
 else:
     _platform = sys.platform
@@ -92,16 +97,22 @@ else:
 
 # Extensions
 extensions = [Extension("pyreadstat.pyreadstat",
-                sources=["pyreadstat/pyreadstat" + ext] + sources,
-                # this dot here is important for cython to find the pxd files
-                include_dirs = [source_dir_root] + source_dirs + ["pyreadstat", "."],
-                libraries=libraries,
-                extra_compile_args=["-Ireadstat", "-DHAVE_ZLIB=1"] ),
+                    sources=["pyreadstat/pyreadstat" + ext] + sources,
+                    # this dot here is important for cython to find the pxd files
+                    include_dirs = [source_dir_root] + source_dirs + ["pyreadstat", "."],
+                    libraries=libraries,
+                    extra_compile_args=["-Ireadstat", "-DHAVE_ZLIB=1"] ),
                 Extension("pyreadstat._readstat_parser",
-                sources=["pyreadstat/_readstat_parser" + ext] + sources,
-                include_dirs = [source_dir_root] + source_dirs + ["pyreadstat", "."],
-                libraries=libraries,
-                extra_compile_args=["-Ireadstat", "-DHAVE_ZLIB=1"])]
+                    sources=["pyreadstat/_readstat_parser" + ext] + sources,
+                    include_dirs = [source_dir_root] + source_dirs + ["pyreadstat", "."],
+                    libraries=libraries,
+                    extra_compile_args=["-Ireadstat", "-DHAVE_ZLIB=1"]),
+                Extension("pyreadstat._readstat_writer",
+                        sources=["pyreadstat/_readstat_writer" + ext] + sources,
+                        include_dirs=[source_dir_root] + source_dirs + ["pyreadstat", "."],# + [numpy.get_include()],
+                        libraries=libraries,
+                        extra_compile_args=["-Ireadstat", "-DHAVE_ZLIB=1"])
+              ]
 
 # By setting this compiler directive, cython will
 # embed signature information in docstrings. Sphinx then knows how to extract
@@ -115,17 +126,17 @@ if USE_CYTHON:
     # somebody is switching between python 2 and 3
     extensions = cythonize(extensions, compile_time_env={'PY_MAJOR_VERSION':PY_MAJOR_VERSION}, force=True)
 
-long_description = """ A Python package to read SAS
-(sas7bdat, sas7bcat, xport/xpt), SPSS (sav, zsav, por) and Stata (dta) files into pandas data frames. It is a wrapper
+long_description = """ A Python package to read and write SAS
+(sas7bdat, sas7bcat, xport/xpt), SPSS (sav, zsav, por) and Stata (dta) files into/from pandas data frames. It is a wrapper
 around the C library readstat.<br>
 Please visit out project home page for more information:<br>
 https://github.com/Roche/pyreadstat"""
 
-short_description = "Reads SAS, SPSS and Stata files into pandas data frames."
+short_description = "Reads and Writes SAS, SPSS and Stata files into/from pandas data frames."
 
 setup(
     name='pyreadstat',
-    version='0.2.2',
+    version='0.2.7',
     description=short_description,
     author="Otto Fajardo",
     author_email="pleasecontactviagithub@notvalid.com",
