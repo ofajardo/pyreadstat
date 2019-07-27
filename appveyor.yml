@@ -30,7 +30,7 @@ install:
   - conda install -q -c msys2 m2w64-toolchain
   #- python.exe setup.py config_fc
   #- python.exe setup.py config --compiler=mingw32
-  - copy scripts\distutils.cfg %CONDPATH%\Lib\distutils
+  - copy C:\projects\pyreadstat\scripts\distutils.cfg %CONDPATH%\Lib\distutils
   - python.exe setup.py bdist_wheel 
   - ps: "ls dist"
   - pip install -q -pre --no-index --find-links dist/ pyreadstat
