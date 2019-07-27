@@ -28,9 +28,9 @@ install:
   - activate python%PYTHON_VERSION%-%PLATFORM%
   - conda install -q setuptools pandas wheel pip libpython cython zlib
   - conda install -q -c msys2 m2w64-toolchain
-  - python.exe setup.py config_fc
-  - python.exe setup.py config --compiler=mingw32 --fcompiler=gfortran
-  - python.exe setup.py bdist_wheel
+  #- python.exe setup.py config_fc
+  #- python.exe setup.py config --compiler=mingw32
+  - python.exe setup.py bdist_wheel --compiler=mingw32
   - ps: "ls dist"
   - pip install -q -pre --no-index --find-links dist/ pyreadstat
 
