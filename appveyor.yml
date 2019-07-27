@@ -29,8 +29,13 @@ install:
   - conda install -q setuptools pandas wheel pip libpython cython zlib
   - conda install -q -c msys2 m2w64-toolchain
   #- python.exe setup.py config_fc
-  #- python.exe setup.py config --compiler=mingw32
-  - copy C:\projects\pyreadstat\scripts\distutils.cfg %CONDPATH%\Lib\distutils
+  - ps: "pwd"
+  - ps: "ls"
+  - ps: "ls C:\projects\pyreadstat\scripts"
+  - echo %CONDPATH%
+  - dir %CONDPATH%\Lib\distutils
+  - python.exe setup.py config --compiler=mingw32
+  #- copy C:\projects\pyreadstat\scripts\distutils.cfg %CONDPATH%\Lib\distutils
   - python.exe setup.py bdist_wheel 
   - ps: "ls dist"
   - pip install -q -pre --no-index --find-links dist/ pyreadstat
