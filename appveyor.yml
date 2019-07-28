@@ -2,10 +2,10 @@ environment:
   matrix:
     - PYTHON_VERSION: "3.7"
       CONDAPATH: 'C:\Miniconda37'
-    #- PYTHON_VERSION: "3.5"
-    #  CONDAPATH: 'C:\Miniconda35'
-    #- PYTHON_VERSION: "3.6"
-    #  CONDAPATH: 'C:\Miniconda36'
+    - PYTHON_VERSION: "3.5"
+      CONDAPATH: 'C:\Miniconda35'
+    - PYTHON_VERSION: "3.6"
+      CONDAPATH: 'C:\Miniconda36'
 
 #cache:
 #  - '%LOCALAPPDATA%\pip\Cache'
@@ -27,12 +27,11 @@ install:
   - call %CONDAPATH%\Scripts\activate
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  #- conda create -q --name python%PYTHON_VERSION%-%PLATFORM% python=%PYTHON_VERSION%
-  #- conda create -q --name python%PYTHON_VERSION%-%PLATFORM%_testenv python=%PYTHON_VERSION%
-  #- activate python%PYTHON_VERSION%-%PLATFORM%
-  #- set PATH=%CONDAPATH%\bin;%CONDAPATH%\Scripts;%PATH%
+  - conda create -q --name python%PYTHON_VERSION%-%PLATFORM% python=%PYTHON_VERSION%
+  - conda create -q --name python%PYTHON_VERSION%-%PLATFORM%_testenv python=%PYTHON_VERSION%
+  - activate python%PYTHON_VERSION%-%PLATFORM%
   - conda install -q setuptools pandas wheel pip libpython cython #zlib
-  - conda install -q -c msys2 m2w64-toolchain m2w64-zlib m2w64-libiconv
+  - conda install -q -c msys2 m2w64-toolchain #m2w64-zlib m2w64-libiconv
   - del /Q dist\*.*
   - dir dist
   #- python.exe setup.py config_fc
@@ -41,9 +40,9 @@ install:
   - python.exe setup.py bdist_wheel 
   - ps: "ls dist"
   # prepare test environment
-  #- deactivate
-  #- activate python%PYTHON_VERSION%-%PLATFORM%_testenv
-  #- conda install -q pandas wheel pip
+  - deactivate
+  - activate python%PYTHON_VERSION%-%PLATFORM%_testenv
+  - conda install -q pandas wheel pip
   - pip install --pre --no-index --find-links dist/ pyreadstat
 
 build: off
