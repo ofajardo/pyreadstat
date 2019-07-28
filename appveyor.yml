@@ -12,8 +12,9 @@ environment:
 #  - '%USERPROFILE%\.cache\matplotlib'
 
 platform:
-  - x64
   - x86
+  #- x64
+  
 
 
 matrix:
