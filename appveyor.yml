@@ -1,11 +1,12 @@
 environment:
   matrix:
-    - PYTHON_VERSION: "3.7"
-      CONDAPATH: 'C:\Miniconda37'
     - PYTHON_VERSION: "3.5"
       CONDAPATH: 'C:\Miniconda35'
     - PYTHON_VERSION: "3.6"
       CONDAPATH: 'C:\Miniconda36'
+    #- PYTHON_VERSION: "3.7"
+    #  CONDAPATH: 'C:\Miniconda37'
+    
 
 #cache:
 #  - '%LOCALAPPDATA%\pip\Cache'
