@@ -81,7 +81,7 @@ if os.name == 'nt':
         data_files = [("", [data_folder + "zlib1.dll", data_folder + "libiconv-2.dll"])]
     else:
         data_folder = "win_libs/32bit/"
-        data_files = [("", [data_folder + "zlib.dll", data_folder + "iconv.dll", data_folder +"libwinpthread-1.dll", data_folder + "libgcc_s_dw2-1.dll"])]
+        data_files = [("", [data_folder + "zlib1.dll", data_folder + "libiconv-2.dll", data_folder +"libwinpthread-1.dll", data_folder + "libgcc_s_dw2-1.dll"])]
     #data_files = [("", [data_folder + "zlib1.dll", data_folder + "libiconv-2.dll"])]
     libraries.append("iconv")
 else:
