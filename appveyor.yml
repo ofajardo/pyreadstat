@@ -4,8 +4,8 @@ environment:
       CONDAPATH: 'C:\Miniconda35'
     - PYTHON_VERSION: "3.6"
       CONDAPATH: 'C:\Miniconda36'
-    #- PYTHON_VERSION: "3.7"
-    #  CONDAPATH: 'C:\Miniconda37'
+    - PYTHON_VERSION: "3.7"
+      CONDAPATH: 'C:\Miniconda37'
     
 
 #cache:
@@ -14,7 +14,7 @@ environment:
 
 platform:
   - x86
-  #- x64
+  - x64
   
 
 
@@ -22,15 +22,15 @@ matrix:
   fast_finish: false
 
 install:
-  - if "%PLATFORM%" == "x86" set PATH=%CONDAPATH%\bin;%CONDAPATH%\Scripts;%PATH%
-  - if "%PLATFORM%" == "x64" set PATH=%CONDAPATH%-x64\bin;%CONDAPATH%-x64\Scripts;%PATH%
-  #- if "%PLATFORM%" == "x64" set CONDAPATH=%CONDAPATH%-x64
+  - if "%PLATFORM%" == "x64" set CONDAPATH=%CONDAPATH%-x64
+  #- if "%PLATFORM%" == "x86" set PATH=%CONDAPATH%\bin;%CONDAPATH%\Scripts;%PATH%
+  #- if "%PLATFORM%" == "x64" set PATH=%CONDAPATH%-x64\bin;%CONDAPATH%-x64\Scripts;%PATH%
   - call %CONDAPATH%\Scripts\activate
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  - conda create -q --name python%PYTHON_VERSION%-%PLATFORM% python=%PYTHON_VERSION%
-  - conda create -q --name python%PYTHON_VERSION%-%PLATFORM%_testenv python=%PYTHON_VERSION%
-  - activate python%PYTHON_VERSION%-%PLATFORM%
+  #- conda create -q --name python%PYTHON_VERSION%-%PLATFORM% python=%PYTHON_VERSION%
+  #- conda create -q --name python%PYTHON_VERSION%-%PLATFORM%_testenv python=%PYTHON_VERSION%
+  #- activate python%PYTHON_VERSION%-%PLATFORM%
   - conda install -q setuptools pandas wheel pip libpython cython #zlib
   - conda install -q -c msys2 m2w64-toolchain #m2w64-zlib m2w64-libiconv
   - del /Q dist\*.*
@@ -41,9 +41,9 @@ install:
   - python.exe setup.py bdist_wheel 
   - ps: "ls dist"
   # prepare test environment
-  - deactivate
-  - activate python%PYTHON_VERSION%-%PLATFORM%_testenv
-  - conda install -q pandas wheel pip
+  #- deactivate
+  #- activate python%PYTHON_VERSION%-%PLATFORM%_testenv
+  #- conda install -q pandas wheel pip
   - pip install --pre --no-index --find-links dist/ pyreadstat
 
 build: off
