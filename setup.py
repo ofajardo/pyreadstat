@@ -78,11 +78,11 @@ if os.name == 'nt':
     is64bit = sys.maxsize > 2 ** 32
     if is64bit:
         data_folder = "win_libs/64bit/"
-        data_files = [("", [data_folder + "zlib1.dll", data_folder + "libiconv-2.dll"])]
+        #data_files = [("", [data_folder + "zlib1.dll", data_folder + "libiconv-2.dll"])]
     else:
         data_folder = "win_libs/32bit/"
-        data_files = [("", [data_folder + "zlib.dll", data_folder + "iconv.dll"])]
-    #data_files = [("", [data_folder + "zlib1.dll", data_folder + "libiconv-2.dll"])]
+        #data_files = [("", [data_folder + "zlib.dll", data_folder + "iconv.dll"])]
+    data_files = [("", [data_folder + "zlib1.dll", data_folder + "libiconv-2.dll"])]
     libraries.append("iconv")
 else:
     _platform = sys.platform
