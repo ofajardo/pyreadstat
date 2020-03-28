@@ -5,6 +5,9 @@ jobs:
     # perform a linux build
     - services: docker
 
+before_install:
+  - sudo apt-get install zlib
+
 install:
   - python3 -m pip install cibuildwheel==1.3.0
 
