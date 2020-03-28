@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to pyreadstat’s documentation! &mdash; pyreadstat 0.1.2 documentation</title>
+  <title>Welcome to pyreadstat’s documentation! &mdash; pyreadstat 0.2.9 documentation</title>
   
 
   
@@ -162,6 +162,7 @@ object contains the following fields:</p>
 <li><p>notes: notes or documents (text annotations) attached to the file if any (spss and stata).</p></li>
 <li><p>column_names : a list with the names of the columns.</p></li>
 <li><p>column_labels : a list with the column labels, if any.</p></li>
+<li><p>column_names_to_labels : a dictionary with column_names as keys and column_labels as values</p></li>
 <li><p>file_encoding : a string with the file encoding, may be empty</p></li>
 <li><p>number_columns : an int with the number of columns</p></li>
 <li><p>number_rows : an int with the number of rows. If metadataonly option was used, it may
@@ -182,9 +183,8 @@ keys, ‘lo’ and ‘hi’ being the lower boundary and higher boundary for the
 lo and hi are the same, the two elements will always be present. This appears for SPSS (sav) files when using the
 option user_missing=True: user defined missing values appear not as nan but as their true value and this dictionary
 stores the information about which values are to be considered missing.</p></li>
-<li><p>missing_user_values: a list of character values (A to Z and _ for SAS, a to z for SATA) representing user defined
-missing values in SAS and STATA.
-This appears when using user_missing=True in read_sas7bdat or read_dta if user defined missing values are present.</p></li>
+<li><p>missing_user_values: a dict with keys being variable names. Values are a list of character values (A to Z and _ for SAS, a to z for SATA) representing user defined
+missing values in SAS and STATA. This appears when using user_missing=True in read_sas7bdat or read_dta if user defined missing values are present.</p></li>
 <li><p>variable_alignment: a dict with keys being variable names and values being the display alignment: left, center, right or unknown</p></li>
 <li><p>variable_storage_width: a dict with keys being variable names and values being the storage width</p></li>
 <li><p>variable_display_width: a dict with keys being variable names and values being the display width</p></li>
@@ -223,6 +223,8 @@ information about the original variable format stored in the metadata object in 
 Disabling datetime conversion speeds up reading files. In addition it helps to overcome situations where
 there are datetimes that are beyond the limits of python datetime (which is limited to year 10,000, dates
 beyond that will rise an Overflow error in pyreadstat).</p></li>
+<li><p><strong>row_limit</strong> (<em>int</em><em>, </em><em>optional</em>) – maximum number of rows to read. The default is 0 meaning unlimited.</p></li>
+<li><p><strong>row_offset</strong> (<em>int</em><em>, </em><em>optional</em>) – start reading rows after this offset. By default 0, meaning start with the first row not skipping anything.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -231,6 +233,32 @@ beyond that will rise an Overflow error in pyreadstat).</p></li>
 <li><p><em>metadata</em> – object with metadata. Look at the documentation for more information.</p></li>
 </ul>
 </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyreadstat.pyreadstat.read_file_in_chunks">
+<code class="sig-prename descclassname">pyreadstat.pyreadstat.</code><code class="sig-name descname">read_file_in_chunks</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyreadstat.pyreadstat.read_file_in_chunks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a generator that will allow to read a file in chunks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>read_function</strong> (<em>pyreadstat function</em>) – a pyreadstat reading function</p></li>
+<li><p><strong>file_path</strong> (<em>string</em>) – path to the file to be read</p></li>
+<li><p><strong>chunksize</strong> (<em>integer</em><em>, </em><em>optional</em>) – size of the chunks to read</p></li>
+<li><p><strong>offset</strong> (<em>integer</em><em>, </em><em>optional</em>) – start reading the file after certain number of rows</p></li>
+<li><p><strong>limit</strong> (<em>integer</em><em>, </em><em>optional</em>) – stop reading the file after certain number of rows, will be added to offset</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – any other keyword argument to pass to the read_function. row_limit and row_offset will be discarded if present.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Yields</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>data_frame</strong> (<em>pandas dataframe</em>) – a pandas data frame with the data (no data in this case, so will be empty)</p></li>
+<li><p><em>metadata</em> – object with metadata. The member value_labels is the one that contains the formats.
+Look at the documentation for more information.</p></li>
+<li><p><strong>it</strong> (<em>generator</em>) – A generator that reads the file in chunks.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -259,6 +287,8 @@ information about the original variable format stored in the metadata object in 
 Disabling datetime conversion speeds up reading files. In addition it helps to overcome situations where
 there are datetimes that are beyond the limits of python datetime (which is limited to year 10,000, dates
 beyond that will rise an Overflow error in pyreadstat).</p></li>
+<li><p><strong>row_limit</strong> (<em>int</em><em>, </em><em>optional</em>) – maximum number of rows to read. The default is 0 meaning unlimited.</p></li>
+<li><p><strong>row_offset</strong> (<em>int</em><em>, </em><em>optional</em>) – start reading rows after this offset. By default 0, meaning start with the first row not skipping anything.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -330,6 +360,8 @@ information about the original variable format stored in the metadata object in 
 Disabling datetime conversion speeds up reading files. In addition it helps to overcome situations where
 there are datetimes that are beyond the limits of python datetime (which is limited to year 10,000, dates
 beyond that will rise an Overflow error in pyreadstat).</p></li>
+<li><p><strong>row_limit</strong> (<em>int</em><em>, </em><em>optional</em>) – maximum number of rows to read. The default is 0 meaning unlimited.</p></li>
+<li><p><strong>row_offset</strong> (<em>int</em><em>, </em><em>optional</em>) – start reading rows after this offset. By default 0, meaning start with the first row not skipping anything.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -371,6 +403,8 @@ information about the original variable format stored in the metadata object in 
 Disabling datetime conversion speeds up reading files. In addition it helps to overcome situations where
 there are datetimes that are beyond the limits of python datetime (which is limited to year 10,000, dates
 beyond that will rise an Overflow error in pyreadstat).</p></li>
+<li><p><strong>row_limit</strong> (<em>int</em><em>, </em><em>optional</em>) – maximum number of rows to read. The default is 0 meaning unlimited.</p></li>
+<li><p><strong>row_offset</strong> (<em>int</em><em>, </em><em>optional</em>) – start reading rows after this offset. By default 0, meaning start with the first row not skipping anything.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -403,6 +437,8 @@ information about the original variable format stored in the metadata object in 
 Disabling datetime conversion speeds up reading files. In addition it helps to overcome situations where
 there are datetimes that are beyond the limits of python datetime (which is limited to year 10,000, dates
 beyond that will rise an Overflow error in pyreadstat).</p></li>
+<li><p><strong>row_limit</strong> (<em>int</em><em>, </em><em>optional</em>) – maximum number of rows to read. The default is 0 meaning unlimited.</p></li>
+<li><p><strong>row_offset</strong> (<em>int</em><em>, </em><em>optional</em>) – start reading rows after this offset. By default 0, meaning start with the first row not skipping anything.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -478,6 +514,29 @@ otherwise</p>
 <li><p><strong>column_labels</strong> (<em>list</em><em>, </em><em>optional</em>) – list of labels for columns (variables), must be the same length as the number of columns. Variables with no
 labels must be represented by None.</p></li>
 <li><p><strong>version</strong> (<em>int</em><em>, </em><em>optional</em>) – dta file version, supported from 8 to 15, default is 15</p></li>
+<li><p><strong>variable_value_labels</strong> (<em>dict</em><em>, </em><em>optional</em>) – value labels, a dictionary with key variable name and value a dictionary with key values and
+values labels. Variable names must match variable names in the dataframe otherwise will be
+ignored. Value types must match the type of the column in the dataframe.</p></li>
+<li><p><strong>missing_user_values</strong> (<em>dict</em><em>, </em><em>optional</em>) – user defined missing values for numeric variables. Must be a dictionary with keys being variable
+names and values being a list of missing values. Missing values must be a single character
+between a and z.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyreadstat.pyreadstat.write_por">
+<code class="sig-prename descclassname">pyreadstat.pyreadstat.</code><code class="sig-name descname">write_por</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyreadstat.pyreadstat.write_por" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes a pandas data frame to a SPSS POR file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pandas data frame</em>) – pandas data frame to write to sav or zsav</p></li>
+<li><p><strong>dst_path</strong> (<em>str</em>) – full path to the result sav or zsav file</p></li>
+<li><p><strong>file_label</strong> (<em>str</em><em>, </em><em>optional</em>) – a label for the file</p></li>
+<li><p><strong>column_labels</strong> (<em>list</em><em>, </em><em>optional</em>) – list of labels for columns (variables), must be the same length as the number of columns. Variables with no
+labels must be represented by None.</p></li>
 </ul>
 </dd>
 </dl>
@@ -497,6 +556,20 @@ labels must be represented by None.</p></li>
 labels must be represented by None.</p></li>
 <li><p><strong>compress</strong> (<em>boolean</em><em>, </em><em>optional</em>) – if true a zsav will be written, by default False, a sav is written</p></li>
 <li><p><strong>note</strong> (<em>str</em><em>, </em><em>optional</em>) – a note to add to the file</p></li>
+<li><p><strong>variable_value_labels</strong> (<em>dict</em><em>, </em><em>optional</em>) – value labels, a dictionary with key variable name and value a dictionary with key values and
+values labels. Variable names must match variable names in the dataframe otherwise will be
+ignored. Value types must match the type of the column in the dataframe.</p></li>
+<li><p><strong>missing_ranges</strong> (<em>dict</em><em>, </em><em>optional</em>) – user defined missing values. Must be a dictionary with keys as variable names matching variable
+names in the dataframe. The values must be a list. Each element in that list can either be
+either a discrete numeric or string value (max 3 per variable) or a dictionary with keys ‘hi’ and ‘lo’ to
+indicate the upper and lower range for numeric values (max 1 range value + 1 discrete value per
+variable). hi and lo may also be the same value in which case it will be interpreted as a discrete
+missing value.
+For this to be effective, values in the dataframe must be the same as reported here and not NaN.</p></li>
+<li><p><strong>variable_display_width</strong> (<em>dict</em><em>, </em><em>optional</em>) – set the display width for variables. Must be a dictonary with keys being variable names and
+values being integers.</p></li>
+<li><p><strong>variable_measure</strong> (<em>dict</em><em>, </em><em>optional</em>) – sets the measure type for a variable. Must be a dictionary with keys being variable names and
+values being strings one of “nominal”, “ordinal”, “scale” or “unknown” (default).</p></li>
 </ul>
 </dd>
 </dl>
@@ -506,7 +579,9 @@ labels must be represented by None.</p></li>
 <dt id="pyreadstat.pyreadstat.write_xport">
 <code class="sig-prename descclassname">pyreadstat.pyreadstat.</code><code class="sig-name descname">write_xport</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyreadstat.pyreadstat.write_xport" title="Permalink to this definition">¶</a></dt>
 <dd><p>Writes a pandas data frame to a SAS Xport (xpt) file.
-Only XPORT version 5 is supported. (files written in version 8 cannot be opened in SAS).</p>
+Only XPORT version 5 is supported (files written in version 8 cannot be opened in SAS).
+If no table_name is specified the dataset has by default the name DATASET (take it into account if
+reading the file from SAS.)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">

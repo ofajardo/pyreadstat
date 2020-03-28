@@ -22,6 +22,9 @@ import sys
 
 PY_MAJOR_VERSION = sys.version_info[0]
 
+if PY_MAJOR_VERSION < 3 and os.name == 'nt':
+    raise Exception("Python 2 is not supported on Windows.")
+
 # If cython is there and version is good, use it.
 try:
     import Cython
@@ -91,6 +94,7 @@ else:
         libraries.append("iconv")
 
 # Extensions
+sources.sort()
 extensions = [Extension("pyreadstat.pyreadstat",
                     sources=["pyreadstat/pyreadstat" + ext] + sources,
                     # this dot here is important for cython to find the pxd files
@@ -131,7 +135,7 @@ short_description = "Reads and Writes SAS, SPSS and Stata files into/from pandas
 
 setup(
     name='pyreadstat',
-    version='0.2.7',
+    version='0.2.9',
     description=short_description,
     author="Otto Fajardo",
     author_email="pleasecontactviagithub@notvalid.com",
